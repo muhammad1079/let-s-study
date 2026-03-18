@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📖 let’s study</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      color: #222;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    header {
+      background: #ffffff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .search-box,
+    .category-select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      background: #fff;
+      transition: background 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    .search-box { width: 200px; }
+
+    .dark-btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: none;
+      background: #333;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .dark-btn:hover {
+      background: #444;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 16px 40px;
+    }
+
+    #player-section {
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    #player-header {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      z-index: 2;
+    }
+
+    #loader {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: spin 1s linear infinite;
+      display: none;
+      z-index: 2;
+    }
+
+    #gameFrame {
+      width: 100%;
+      height: 520px;
+      border: none;
+      display: block;
+      transition: opacity 0.3s;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 16px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+
+    .card-body {
+      padding: 8px 10px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .card-tags {
+      font-size: 11px;
+      color: #777;
+      margin-top: 2px;
+    }
+
+    @keyframes spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    body.dark {
+      background: #111;
+      color: #eee;
+    }
+
+    body.dark header {
+      background: #222;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+    }
+
+    body.dark .card {
+      background: #222;
+      color: #eee;
+    }
+
+    body.dark .search-box,
+    body.dark .category-select {
+      background: #333;
+      color: #eee;
+      border-color: #555;
+    }
+
+    @media (max-width: 600px) {
+      .search-box,
+      .category-select {
+        width: 100%;
+      }
+      .grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+      #gameFrame { height: 360px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo-text">📖 let’s study</div>
+
+  <div class="controls">
+    <input id="searchInput" type="text" placeholder="Search games..." class="search-box">
+    <select id="categorySelect" class="category-select">
+      <option value="All">All Categories</option>
+    </select>
+    <button id="darkToggle" class="dark-btn">🌙</button>
+  </div>
+</header>
+
+<main>
+  <section id="player-section">
+    <div id="player-header">Select a game to start playing</div>
+    <div id="loader"></div>
+    <iframe id="gameFrame" src=""></iframe>
+  </section>
+
+  <h2>All Games</h2>
+  <div class="grid" id="gameGrid"></div>
+
+<script>
+
+// Load game into iframe
+function play(url) {
+  const frame = document.getElementById("gameFrame");
+  const loader = document.getElementById("loader");
+  const header = document.getElementById("player-header");
+
+  loader.style.display = "block";
+  frame.style.opacity = "0.3";
+  header.textContent = "Loading...";
+
+  frame.src = url;
+
+  frame.onload = () => {
+    loader.style.display = "none";
+    frame.style.opacity = "1";
+    header.textContent = "Now Playing";
+  };
+}
+
+// Build game cards dynamically
+function renderGames(list) {
+  const grid = document.getElementById("gameGrid");
+  grid.innerHTML = "";
+
+  list.forEach(game => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.onclick = () => play(game.url);
+
+    if (game.thumb) {
+      const img = document.createElement("img");
+      img.src = game.thumb;
+      card.appendChild(img);
+    }
+
+    const body = document.createElement("div");
+    body.className = "card-body";
+
+    const title = document.createElement("div");
+    title.className = "card-title";
+    title.textContent = game.title;
+
+    const tags = document.createElement("div");
+    tags.className = "card-tags";
+    tags.textContent = game.category || "";
+
+    body.appendChild(title);
+    body.appendChild(tags);
+    card.appendChild(body);
+
+    grid.appendChild(card);
+  });
+}
+
+// Search + category filter
+function applyFilters() {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const category = document.getElementById("categorySelect").value;
+
+  const filtered = games.filter(g =>
+    (category === "All" || g.category === category) &&
+    g.title.toLowerCase().includes(search)
+  );
+
+  renderGames(filtered);
+}
+
+// Dark mode toggle
+document.getElementById("darkToggle").onclick = () => {
+  document.body.classList.toggle("dark");
+};
+
+// Search + category listeners
+document.getElementById("searchInput").oninput = applyFilters;
+document.getElementById("categorySelect").onchange = applyFilters;
+const games = [
+
+  /* 1 */
+  {
+    title: "Moto X3M",
+    url: "https://html5.gamedistribution.com/rvvASMiA/8b7e3e02b2c34f0e9f3f4042afe7f184/index.html",
+    thumb: "https://raw.githubusercontent.com/itsjerryok/ubg-thumbnails/main/motox3m.jpg",
+    category: "Racing"
+  },
+
+  /* 2 */
+  {
+    title: "Slope",
+    url: "https://slope-game.github.io/slope/",
+    thumb: "https://raw.githubusercontent.com/itsjerryok/ubg-thumbnails/main/slope.jpg",
+    category: "Running"
+  },
+
+  /* 3 */
+  {
+    title: "Vex 6",
+    url: "https://ubg77.github.io/game131022/vex6/",
+    thumb: "https://raw.githubusercontent.com/itsjerryok/ubg-thumbnails/main/vex6.jpg",
+    category: "Platformer"
+  },
+
+  /* 4 */
+  {
+    title: "Drift Boss",
+    url: "https://html5.gamedistribution.com/rvvASMiA/6b1c3d9f4c3b4e2f9c8f4e3b1d2f/index.html",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/drift-boss.jpg",
+    category: "Racing"
+  },
+
+  /* 5 */
+  {
+    title: "Tunnel Rush",
+    url: "https://ubg77.github.io/game131022/tnl-rush/",
+    thumb: "https://raw.githubusercontent.com/itsjerryok/ubg-thumbnails/main/tunnel-rush.jpg",
+    category: "Running"
+  },
+
+  /* 6 */
+  {
+    title: "Stickman Hook",
+    url: "https://html5.gamedistribution.com/rvvASMiA/5b7e3e02b2c34f0e9f3f4042afe7f184/index.html",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/stickman-hook.jpg",
+    category: "Skill"
+  },
+
+  /* 7 */
+  {
+    title: "Cut the Rope",
+    url: "https://ubg77.github.io/game131022/cut-the-rope/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/cut-the-rope.jpg",
+    category: "Puzzle"
+  },
+
+  /* 8 */
+  {
+    title: "2048",
+    url: "https://play2048.co/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/2048.jpg",
+    category: "Puzzle"
+  },
+
+  /* 9 */
+  {
+    title: "Basketball Stars",
+    url: "https://ubg77.github.io/game131022/bs3/",
+    thumb: "https://raw.githubusercontent.com/itsjerryok/ubg-thumbnails/main/basketball-stars.jpg",
+    category: "Sports"
+  },
+
+  /* 10 */
+  {
+    title: "Retro Bowl",
+    url: "https://ubg77.github.io/game131022/retro-bowl/",
+    thumb: "https://raw.githubusercontent.com/itsjerryok/ubg-thumbnails/main/retro-bowl.jpg",
+    category: "Sports"
+  },
+
+  /* 11 */
+  {
+    title: "Drive Mad",
+    url: "https://drivemad.me/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/drive-mad.jpg",
+    category: "Racing"
+  },
+
+  /* 12 */
+  {
+    title: "Drive Mad 2",
+    url: "https://drivemad2.com/",
+    thumb: null,
+    category: "Racing"
+  },
+
+  /* 13 */
+  {
+    title: "Drive Mad 3",
+    url: "https://drivemad3.com/",
+    thumb: null,
+    category: "Racing"
+  },
+
+  /* 14 */
+  {
+    title: "OvO",
+    url: "https://ovo.cool/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/ovo.jpg",
+    category: "Platformer"
+  },
+
+  /* 15 */
+  {
+    title: "OvO 2",
+    url: "https://ovo2.io/",
+    thumb: null,
+    category: "Platformer"
+  },
+
+  /* 16 */
+  {
+    title: "Run 3",
+    url: "https://run3.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/run-3.jpg",
+    category: "Running"
+  },
+
+  /* 17 */
+  {
+    title: "Run 4",
+    url: "https://run4.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 18 */
+  {
+    title: "Bitlife",
+    url: "https://bitlifeonline.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/bitlife.jpg",
+    category: "Simulation"
+  },
+
+  /* 19 */
+  {
+    title: "Paper.io 2",
+    url: "https://paper-io.com/paper-io-2/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/paper-io-2.jpg",
+    category: "Action"
+  },
+
+  /* 20 */
+  {
+    title: "Paper.io 3",
+    url: "https://paperio3.com/",
+    thumb: null,
+    category: "Action"
+  },
+
+  /* 21 */
+  {
+    title: "Snow Rider 3D",
+    url: "https://snowrider3d.com/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/snow-rider-3d.jpg",
+    category: "Sports"
+  },
+
+  /* 22 */
+  {
+    title: "Slope 2",
+    url: "https://slope2.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 23 */
+  {
+    title: "Slope 3",
+    url: "https://slope3.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 24 */
+  {
+    title: "Slope Ball",
+    url: "https://slopeball.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/slope-ball.jpg",
+    category: "Skill"
+  },
+
+  /* 25 */
+  {
+    title: "Slope Tunnel",
+    url: "https://slopetunnel.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 26 */
+  {
+    title: "Slope City",
+    url: "https://slopecity.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 27 */
+  {
+    title: "Slope Bike",
+    url: "https://slopebike.io/",
+    thumb: null,
+    category: "Racing"
+  },
+
+  /* 28 */
+  {
+    title: "Slope Run",
+    url: "https://sloperun.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 29 */
+  {
+    title: "Slope Multiplayer",
+    url: "https://slopemultiplayer.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 30 */
+  {
+    title: "Slope Unblocked",
+    url: "https://slopeunblocked.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 31 */
+  {
+    title: "Subway Surfers",
+    url: "https://ubg77.github.io/game131022/subway-surfers/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/subway-surfers.jpg",
+    category: "Running"
+  },
+
+  /* 32 */
+  {
+    title: "Temple Run 2",
+    url: "https://templerun2.io/",
+    thumb: null,
+    category: "Running"
+  },
+
+  /* 33 */
+  {
+    title: "Crossy Road",
+    url: "https://crossyroad.io/",
+    thumb: null,
+    category: "Arcade"
+  },
+
+  /* 34 */
+  {
+    title: "Flappy Bird",
+    url: "https://flappybird.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/flappy-bird.jpg",
+    category: "Arcade"
+  },
+
+  /* 35 */
+  {
+    title: "Geometry Dash",
+    url: "https://geometrydash.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/geometry-dash.jpg",
+    category: "Skill"
+  },
+
+  /* 36 */
+  {
+    title: "Geometry Dash Lite",
+    url: "https://geometrydashlite.io/",
+    thumb: null,
+    category: "Skill"
+  },
+
+  /* 37 */
+  {
+    title: "Geometry Dash Meltdown",
+    url: "https://geometrydashmeltdown.io/",
+    thumb: null,
+    category: "Skill"
+  },
+
+  /* 38 */
+  {
+    title: "Geometry Dash World",
+    url: "https://geometrydashworld.io/",
+    thumb: null,
+    category: "Skill"
+  },
+
+  /* 39 */
+  {
+    title: "Geometry Dash SubZero",
+    url: "https://geometrydashsubzero.io/",
+    thumb: null,
+    category: "Skill"
+  },
+
+  /* 40 */
+  {
+    title: "Fireboy and Watergirl 1",
+    url: "https://fireboywatergirl.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/fireboy-watergirl-1.jpg",
+    category: "Puzzle"
+  },
+
+  /* 41 */
+  {
+    title: "Fireboy and Watergirl 2",
+    url: "https://fireboywatergirl2.io/",
+    thumb: null,
+    category: "Puzzle"
+  },
+
+  /* 42 */
+  {
+    title: "Fireboy and Watergirl 3",
+    url: "https://fireboywatergirl3.io/",
+    thumb: null,
+    category: "Puzzle"
+  },
+
+  /* 43 */
+  {
+    title: "Fireboy and Watergirl 4",
+    url: "https://fireboywatergirl4.io/",
+    thumb: null,
+    category: "Puzzle"
+  },
+
+  /* 44 */
+  {
+    title: "Fireboy and Watergirl 5",
+    url: "https://fireboywatergirl5.io/",
+    thumb: null,
+    category: "Puzzle"
+  },
+
+  /* 45 */
+  {
+    title: "Fireboy and Watergirl 6",
+    url: "https://fireboywatergirl6.io/",
+    thumb: null,
+    category: "Puzzle"
+  },
+
+  /* 46 */
+  {
+    title: "1v1.LOL",
+    url: "https://1v1.lol/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/1v1lol.jpg",
+    category: "Shooter"
+  },
+
+  /* 47 */
+  {
+    title: "Shell Shockers",
+    url: "https://shellshock.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/shellshockers.jpg",
+    category: "Shooter"
+  },
+
+  /* 48 */
+  {
+    title: "Krunker.io",
+    url: "https://krunker.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/krunker.jpg",
+    category: "Shooter"
+  },
+
+  /* 49 */
+  {
+    title: "Surviv.io",
+    url: "https://surviv.io/",
+    thumb: null,
+    category: "Shooter"
+  },
+
+  /* 50 */
+  {
+    title: "Zombs Royale",
+    url: "https://zombsroyale.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/zombs-royale.jpg",
+    category: "Shooter"
+  },
+  /* 51 */
+  {
+    title: "Agar.io",
+    url: "https://agar.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/agario.jpg",
+    category: "Action"
+  },
+
+  /* 52 */
+  {
+    title: "Slither.io",
+    url: "https://slither.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/slither.jpg",
+    category: "Action"
+  },
+
+  /* 53 */
+  {
+    title: "Diep.io",
+    url: "https://diep.io/",
+    thumb: null,
+    category: "Shooter"
+  },
+
+  /* 54 */
+  {
+    title: "Little Alchemy",
+    url: "https://littlealchemy.com/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/little-alchemy.jpg",
+    category: "Puzzle"
+  },
+
+  /* 55 */
+  {
+    title: "Little Alchemy 2",
+    url: "https://littlealchemy2.com/",
+    thumb: null,
+    category: "Puzzle"
+  },
+
+  /* 56 */
+  {
+    title: "Cookie Clicker",
+    url: "https://orteil.dashnet.org/cookieclicker/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/cookie-clicker.jpg",
+    category: "Idle"
+  },
+
+  /* 57 */
+  {
+    title: "Idle Breakout",
+    url: "https://idlebreakout.io/",
+    thumb: null,
+    category: "Idle"
+  },
+
+  /* 58 */
+  {
+    title: "Bloons Tower Defense 1",
+    url: "https://bloonstd1.com/",
+    thumb: null,
+    category: "Strategy"
+  },
+
+  /* 59 */
+  {
+    title: "Bloons Tower Defense 2",
+    url: "https://bloonstd2.com/",
+    thumb: null,
+    category: "Strategy"
+  },
+
+  /* 60 */
+  {
+    title: "Bloons Tower Defense 3",
+    url: "https://bloonstd3.com/",
+    thumb: null,
+    category: "Strategy"
+  },
+
+  /* 61 */
+  {
+    title: "Bloons Tower Defense 4",
+    url: "https://bloonstd4.com/",
+    thumb: null,
+    category: "Strategy"
+  },
+
+  /* 62 */
+  {
+    title: "Bloons Tower Defense 5",
+    url: "https://bloonstd5.io/",
+    thumb: null,
+    category: "Strategy"
+  },
+
+  /* 63 */
+  {
+    title: "Minecraft Classic",
+    url: "https://classic.minecraft.net/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/minecraft-classic.jpg",
+    category: "Sandbox"
+  },
+
+  /* 64 */
+  {
+    title: "Tetris",
+    url: "https://tetris.com/play-tetris",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/tetris.jpg",
+    category: "Puzzle"
+  },
+
+  /* 65 */
+  {
+    title: "Snake",
+    url: "https://playsnake.org/",
+    thumb: null,
+    category: "Arcade"
+  },
+
+  /* 66 */
+  {
+    title: "Pac-Man",
+    url: "https://pacman.live/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/pacman.jpg",
+    category: "Arcade"
+  },
+
+  /* 67 */
+  {
+    title: "Tic Tac Toe",
+    url: "https://playtictactoe.org/",
+    thumb: null,
+    category: "Puzzle"
+  },
+
+  /* 68 */
+  {
+    title: "Chess",
+    url: "https://www.chess.com/play/online",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/chess.jpg",
+    category: "Strategy"
+  },
+
+  /* 69 */
+  {
+    title: "Checkers",
+    url: "https://www.coolmathgames.com/0-checkers",
+    thumb: null,
+    category: "Strategy"
+  },
+
+  /* 70 */
+  {
+    title: "Uno Online",
+    url: "https://uno-online.io/",
+    thumb: null,
+    category: "Card"
+  },
+
+  /* 71 */
+  {
+    title: "Monopoly Online",
+    url: "https://monopoly-online.io/",
+    thumb: null,
+    category: "Board"
+  },
+
+  /* 72 */
+  {
+    title: "Scrabble Online",
+    url: "https://playscrabble.com/",
+    thumb: null,
+    category: "Word"
+  },
+
+  /* 73 */
+  {
+    title: "Wordle",
+    url: "https://www.nytimes.com/games/wordle/index.html",
+    thumb: null,
+    category: "Word"
+  },
+
+  /* 74 */
+  {
+    title: "Hangman",
+    url: "https://hangmanwordgame.com/",
+    thumb: null,
+    category: "Word"
+  },
+
+  /* 75 */
+  {
+    title: "Happy Wheels",
+    url: "https://happywheels.io/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/happy-wheels.jpg",
+    category: "Ragdoll"
+  },
+
+  /* 76 */
+  {
+    title: "GTA Online (Browser Fan Game)",
+    url: "https://grandtheftauto5.io/",
+    thumb: null,
+    category: "Action"
+  },
+
+  /* 77 */
+  {
+    title: "FNAF 1",
+    url: "https://fnafunblocked.net/fnaf1/",
+    thumb: null,
+    category: "Horror"
+  },
+
+  /* 78 */
+  {
+    title: "FNAF 2",
+    url: "https://fnafunblocked.net/fnaf2/",
+    thumb: null,
+    category: "Horror"
+  },
+
+  /* 79 */
+  {
+    title: "FNAF 3",
+    url: "https://fnafunblocked.net/fnaf3/",
+    thumb: null,
+    category: "Horror"
+  },
+
+  /* 80 */
+  {
+    title: "FNAF 4",
+    url: "https://fnafunblocked.net/fnaf4/",
+    thumb: null,
+    category: "Horror"
+  },
+
+  /* 81 */
+  {
+    title: "FNAF Sister Location",
+    url: "https://fnafunblocked.net/sister-location/",
+    thumb: null,
+    category: "Horror"
+  },
+
+  /* 82 */
+  {
+    title: "Baldi’s Basics",
+    url: "https://baldisbasics.io/",
+    thumb: null,
+    category: "Horror"
+  },
+
+  /* 83 */
+  {
+    title: "Granny",
+    url: "https://granny.io/",
+    thumb: null,
+    category: "Horror"
+  },
+
+  /* 84 */
+  {
+    title: "Poppy Playtime",
+    url: "https://poppyplaytime.io/",
+    thumb: null,
+    category: "Horror"
+  },
+
+  /* 85 */
+  {
+    title: "Huggy Wuggy Shooter",
+    url: "https://huggywuggy.io/",
+    thumb: null,
+    category: "Shooter"
+  },
+
+  /* 86 */
+  {
+    title: "Among Us Online",
+    url: "https://amongusplay.online/",
+    thumb: "https://raw.githubusercontent.com/unblocked-images/game-thumbs/main/among-us.jpg",
+    category: "Multiplayer"
+  },
+
+  /* 87 */
+  {
+    title: "Roblox (Browser Fan Game)",
+    url: "https://roblox-online.io/",
+    thumb: null,
+    category: "Multiplayer"
+  },
+
+  /* 88 */
+  {
+    title: "Fortnite (Browser Fan Game)",
+    url: "https://fortnite-online.io/",
+    thumb: null,
+    category: "Shooter"
+  },
+
+  /* 89 */
+  {
+    title: "Call of Duty Online",
+    url: "https://callofduty.io/",
+    thumb: null,
+    category: "Shooter"
+  },
+
+  /* 90 */
+  {
+    title: "PUBG Online",
+    url: "https://pubg-online.io/",
+    thumb: null,
+    category: "Shooter"
+  },
+
+  /* 91 */
+  {
+    title: "Mario Bros",
+    url: "https://supermariobros.io/",
+    thumb: null,
+    category: "Platformer"
+  },
+
+  /* 92 */
+  {
+    title: "Super Mario 63",
+    url: "https://supermario63.io/",
+    thumb: null,
+    category: "Platformer"
+  },
+
+  /* 93 */
+  {
+    title: "Super Mario Flash",
+    url: "https://supermarioflash.io/",
+    thumb: null,
+    category: "Platformer"
+  },
+
+  /* 94 */
+  {
+    title: "Sonic the Hedgehog",
+    url: "https://sonic.io/",
+    thumb: null,
+    category: "Platformer"
+  },
+
+  /* 95 */
+  {
+    title: "Pokemon Fire Red",
+    url: "https://pokemonfire.io/",
+    thumb: null,
+    category: "RPG"
+  },
+
+  /* 96 */
+  {
+    title: "Pokemon Emerald",
+    url: "https://pokemonemerald.io/",
+    thumb: null,
+    category: "RPG"
+  },
+
+  /* 97 */
+  {
+    title: "Pokemon Crystal",
+    url: "https://pokemoncrystal.io/",
+    thumb: null,
+    category: "RPG"
+  },
+
+  /* 98 */
+  {
+    title: "Pokemon Ruby",
+    url: "https://pokemonruby.io/",
+    thumb: null,
+    category: "RPG"
+  },
+
+  /* 99 */
+  {
+    title: "Pokemon Sapphire",
+    url: "https://pokemonsapphire.io/",
+    thumb: null,
+    category
